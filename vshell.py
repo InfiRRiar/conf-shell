@@ -107,7 +107,10 @@ class VShell:
             case "ls":
                 options, parameters = parse_options(line)
                 if is_valid_options(line, options, ["-Q", "-R", "-U", "-X", "-1"]):
-                    self.ls_execute(options, parameters[0])
+                    if not len(parameters):
+                        self.ls_execute(options, self.local_path)
+                    else:
+                        self.ls_execute(options, parameters[0])
 
             case "cd":
                 options, parameters = parse_options(line)
@@ -152,14 +155,13 @@ class VShell:
         print(self.local_path)
 
     def ls_execute(self, options, path):
-        path = self.generate_absolute_way(path)
-        sep = "  "
 
         responded = []
+        sep = " "
 
         for considered in self.system.namelist():
             if considered.startswith(path):
-                if ("/" in considered[len(path):] == path and "-R" in options) or len(considered) > len(path):
+                if (len(considered) > len(path) and "-R" in options) or "/" not in considered[len(path):-1]:
                     responded.append(considered[len(path):])
 
         if "-Q" in options:
@@ -239,7 +241,7 @@ class VShell:
         path = path.split("/")
 
         if path[0] == self.root_path:
-            return path
+            return "/".join(path)
 
         absolute_way = self.local_path
 
