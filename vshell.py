@@ -62,6 +62,7 @@ class VShell:
         self.script_path = script_path
         self.root_path = os.path.basename(zip_path).split(".")[0]
         self.local_path = os.path.basename(zip_path).split(".")[0] + "/"
+        print(self.root_path, self.local_path)
 
     def launch_shell(self):
         if script_path:
@@ -155,13 +156,14 @@ class VShell:
         print(self.local_path)
 
     def ls_execute(self, options, path):
-
         responded = []
         sep = " "
 
+        path = self.generate_absolute_way(path)
+
         for considered in self.system.namelist():
             if considered.startswith(path):
-                if (len(considered) > len(path) and "-R" in options) or "/" not in considered[len(path):-1]:
+                if (len(considered[len(path):]) > len(path) and "-R" in options) or "/" not in considered[len(path):-1]:
                     responded.append(considered[len(path):])
 
         if "-Q" in options:
@@ -179,18 +181,20 @@ class VShell:
     def cd_execute(self, options, path: str):
         if len(options) != 0:
             print(f"Attribute {options[-1]} unavailable in this shell")
-
         path = self.generate_absolute_way(path)
-
-        if any(map(lambda x: True if x.startswith(path) and len(x) > len(path) else False, self.system.namelist())) \
-                and path not in self.system.namelist():
-            print(f"vshell: cd: {path}: Not a directory")
+        if any(map(lambda x: True if x.startswith(path) and len(x) > len(path)
+                                     and path in self.system.namelist() else False, self.system.namelist())):
+            self.local_path = path
             return
-
-        self.local_path = path
+        print(f"vshell: cd: {path}: Not a directory")
+        return
 
     def cat_execute(self, options, path: str):
-        path = self.generate_absolute_way(path)
+        path = self.local_path + self.generate_absolute_way(path)
+
+        if path[:-1] not in self.system.namelist():
+            print(f"There is no file {path[-1]} in the archive")
+            return
 
         if len(options) != 0:
             for option in options:
@@ -241,7 +245,7 @@ class VShell:
         path = path.split("/")
 
         if path[0] == self.root_path:
-            return "/".join(path)
+            return ""
 
         absolute_way = self.local_path
 
@@ -254,6 +258,7 @@ class VShell:
                 absolute_way = "/".join(absolute_way.split("/")[:-2]) + "/"
             else:
                 absolute_way += part + "/"
+        absolute_way = absolute_way[len(self.root_path) + 1:]
         return absolute_way
 
 
