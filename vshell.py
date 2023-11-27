@@ -158,9 +158,7 @@ class VShell:
     def ls_execute(self, options, path):
         responded = []
         sep = " "
-
         path = self.generate_absolute_way(path)
-
         for considered in self.system.namelist():
             if considered.startswith(path):
                 if (len(considered[len(path):]) > len(path) and "-R" in options) or "/" not in considered[len(path):-1]:
@@ -182,9 +180,11 @@ class VShell:
         if len(options) != 0:
             print(f"Attribute {options[-1]} unavailable in this shell")
         path = self.generate_absolute_way(path)
-        if any(map(lambda x: True if x.startswith(path) and len(x) > len(path)
-                                     and path in self.system.namelist() else False, self.system.namelist())):
+        if any(map(lambda x: True if x == path else False, self.system.namelist())):
             self.local_path = path
+            return
+        if len(path) == 0:
+            self.local_path = self.root_path + "/"
             return
         print(f"vshell: cd: {path}: Not a directory")
         return
@@ -243,17 +243,16 @@ class VShell:
             return os.path.basename(zip_path).split(".")[0] + "/"
 
         path = path.split("/")
-
         if path[0] == self.root_path:
             return ""
 
-        absolute_way = self.local_path
+        absolute_way = self.root_path + "/"
 
         for part in path:
             if part in [".", ""]:
                 continue
             if part == "..":
-                if absolute_way == self.root_path:
+                if absolute_way == self.root_path + "/":
                     continue
                 absolute_way = "/".join(absolute_way.split("/")[:-2]) + "/"
             else:
